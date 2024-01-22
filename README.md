@@ -1,3 +1,3 @@
-# Spring Boot JWT Template
+# Remaster Backend
 
-spring boot backend with jwt authentication setup using spring security
+backend for remaster built with spring
