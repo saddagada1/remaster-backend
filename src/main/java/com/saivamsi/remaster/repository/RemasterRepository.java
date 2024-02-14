@@ -4,7 +4,6 @@ import com.saivamsi.remaster.model.Remaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,4 +29,22 @@ public interface RemasterRepository extends JpaRepository<Remaster, UUID> {
             select r from Remaster r where r.id = :id and r.user.id = :userId
             """)
     Optional<Remaster> findByIdAndUserId(UUID id, UUID userId);
+
+    @Query(value = """
+            select r.* from Remaster r
+            join application_user u on r.user_id = u.id
+            where r.id >= :cursor and (levenshtein(r.url, :query) <= 3 or levenshtein(r.name, :query) <= 3 or levenshtein(r.description, :query) <= 3)
+            order by r.id asc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> searchRemastersWithCursor(String query, UUID cursor, Integer limit);
+
+    @Query(value = """
+            select r.* from Remaster r
+            join application_user u on r.user_id = u.id
+            where levenshtein(r.url, :query) <= 3 or levenshtein(r.name, :query) <= 3 or levenshtein(r.description, :query) <= 3
+            order by r.id asc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> searchRemasters(String query, Integer limit);
 }

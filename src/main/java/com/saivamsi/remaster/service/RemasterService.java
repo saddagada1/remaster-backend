@@ -5,7 +5,8 @@ import com.saivamsi.remaster.exception.GlobalException;
 import com.saivamsi.remaster.model.ApplicationUser;
 import com.saivamsi.remaster.model.Remaster;
 import com.saivamsi.remaster.repository.RemasterRepository;
-import com.saivamsi.remaster.request.RemasterRequest;
+import com.saivamsi.remaster.request.CreateRemasterRequest;
+import com.saivamsi.remaster.request.UpdateRemasterRequest;
 import com.saivamsi.remaster.response.PageResponse;
 import com.saivamsi.remaster.response.RemasterResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +22,25 @@ import java.util.UUID;
 public class RemasterService {
     private final RemasterRepository remasterRepository;
 
-    public RemasterResponse createRemaster (RemasterRequest remaster, ApplicationUser user) {
+    public RemasterResponse createRemaster (CreateRemasterRequest remaster, ApplicationUser user) {
 //        if (!user.isVerified()) {
 //            throw new GlobalException(HttpStatus.BAD_REQUEST, GlobalError.builder().subject("user").message("please verify your account before proceeding").build());
 //        }
+
         return remasterRepository.save(Remaster.builder().url(remaster.getUrl()).name(remaster.getName()).description(remaster.getDescription())
                 .duration(remaster.getDuration()).key(remaster.getKey()).mode(remaster.getMode()).tempo(remaster.getTempo()).timeSignature(remaster.getTimeSignature())
                 .tuning(remaster.getTuning()).user(user).build()
         ).getRemasterResponse();
+    }
+
+    public RemasterResponse updateRemaster (UpdateRemasterRequest remaster, ApplicationUser user) {
+        Optional<Remaster> userRemaster = remasterRepository.findByIdAndUserId(remaster.getId(), user.getId());
+
+        if (userRemaster.isEmpty()) {
+            throw new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build());
+        }
+
+        return remasterRepository.save(userRemaster.get().updateRemaster(remaster)).getRemasterResponse();
     }
 
     public RemasterResponse getUserRemaster(UUID id, ApplicationUser user) {
@@ -59,7 +71,7 @@ public class RemasterService {
                 .map(Remaster::getRemasterResponse)
                 .toList();
 
-        return new PageResponse<RemasterResponse>(next, remasterResponses);
+        return new PageResponse<>(next, remasterResponses);
     }
 
     public RemasterResponse getRemaster(UUID id) {
@@ -90,6 +102,27 @@ public class RemasterService {
                 .map(Remaster::getRemasterResponse)
                 .toList();
 
-        return new PageResponse<RemasterResponse>(next, remasterResponses);
+        return new PageResponse<>(next, remasterResponses);
+    }
+
+    public PageResponse<RemasterResponse> searchRemasters(String query, UUID cursor, Integer limit) {
+        List<Remaster> remasters;
+        if (cursor == null) {
+            remasters = remasterRepository.searchRemasters(query, limit + 1);
+        } else {
+            remasters = remasterRepository.searchRemastersWithCursor(query, cursor, limit + 1);
+        }
+
+        UUID next = null;
+        if (remasters.size() > limit) {
+            Remaster last = remasters.removeLast();
+            next = last.getId();
+        }
+
+        List<RemasterResponse> remasterResponses = remasters.stream()
+                .map(Remaster::getRemasterResponse)
+                .toList();
+
+        return new PageResponse<>(next, remasterResponses);
     }
 }

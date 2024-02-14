@@ -3,8 +3,6 @@ package com.saivamsi.remaster.service;
 import com.saivamsi.remaster.exception.GlobalError;
 import com.saivamsi.remaster.exception.GlobalException;
 import com.saivamsi.remaster.model.ApplicationUser;
-import com.saivamsi.remaster.model.Token;
-import com.saivamsi.remaster.repository.TokenRepository;
 import com.saivamsi.remaster.response.AuthenticationResponse;
 import com.saivamsi.remaster.model.Role;
 import com.saivamsi.remaster.repository.UserRepository;
@@ -20,42 +18,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
-    private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
-
-    private void saveTokens(ApplicationUser user, String token, String refreshToken) {
-        tokenRepository.saveAll(List.of(Token.builder()
-                .user(user)
-                .token(token)
-                .type("access_token")
-                .build(), Token.builder()
-                .user(user)
-                .token(refreshToken)
-                .type("access_token")
-                .build()));
-    }
-
-    private void revokeAllTokensForUser(ApplicationUser user) {
-        List<Token> tokens = tokenRepository.findAllValidTokensByUser(user.getId());
-
-        if (tokens.isEmpty()) return;
-
-        tokens.forEach(t -> {
-            t.setRevoked(true);
-            t.setExpired(true);
-        });
-
-        tokenRepository.saveAll(tokens);
-    }
 
     public AuthenticationResponse registerUser(String username, String email, String password) {
         Optional<ApplicationUser> existingUser = userRepository.findByUsernameOrEmail(username.toLowerCase(), email.toLowerCase());
@@ -78,7 +49,7 @@ public class AuthenticationService {
         String token = tokenService.generateToken(user);
         String refreshToken = tokenService.generateRefreshToken(user);
         Date expiresAt = tokenService.extractExpiration(token, "access_token");
-        saveTokens(user, token, refreshToken);
+        tokenService.saveTokens(user, token, refreshToken);
         return AuthenticationResponse.builder()
                 .user(user.getSafeUser())
                 .accessToken(token)
@@ -94,8 +65,8 @@ public class AuthenticationService {
             String token = tokenService.generateToken(user);
             String refreshToken = tokenService.generateRefreshToken(user);
             Date expiresAt = tokenService.extractExpiration(token, "access_token");
-            revokeAllTokensForUser(user);
-            saveTokens(user, token, refreshToken);
+            tokenService.revokeAllTokensForUser(user);
+            tokenService.saveTokens(user, token, refreshToken);
             return AuthenticationResponse.builder()
                     .user(user.getSafeUser())
                     .accessToken(token)
@@ -112,13 +83,13 @@ public class AuthenticationService {
             final String userPrinciple = tokenService.extractSubject(refreshToken, "refresh_token");
             if (userPrinciple != null) {
                 ApplicationUser user = userRepository.findByUsernameOrEmail(userPrinciple, userPrinciple).orElseThrow();
-                boolean isTokenInUse = tokenRepository.findByToken(refreshToken).map(t -> !t.isExpired() && !t.isRevoked()).orElse(false);
+                boolean isTokenInUse = tokenService.isTokenInUse(refreshToken);
                 if (tokenService.isTokenValid(refreshToken, user, "refresh_token") && isTokenInUse) {
                     String token = tokenService.generateToken(user);
                     String newRefreshToken = tokenService.generateRefreshToken(user);
                     Date expiresAt = tokenService.extractExpiration(token, "access_token");
-                    revokeAllTokensForUser(user);
-                    saveTokens(user, token, newRefreshToken);
+                    tokenService.revokeAllTokensForUser(user);
+                    tokenService.saveTokens(user, token, newRefreshToken);
                     return AuthenticationResponse.builder()
                             .user(user.getSafeUser())
                             .accessToken(token)
@@ -147,13 +118,7 @@ public class AuthenticationService {
 
         final String token = authHeader.split(" ", 2)[1];
 
-        Token savedToken = tokenRepository.findByToken(token).orElse(null);
-
-        if (savedToken != null) {
-            savedToken.setExpired(true);
-            savedToken.setRevoked(true);
-            tokenRepository.save(savedToken);
-        }
+        tokenService.revokeTokenForUser(token);
 
         SecurityContextHolder.clearContext();
     }

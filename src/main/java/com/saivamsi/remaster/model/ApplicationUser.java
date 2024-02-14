@@ -1,6 +1,7 @@
 package com.saivamsi.remaster.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.saivamsi.remaster.request.UpdateUserRequest;
 import com.saivamsi.remaster.response.BasicUserResponse;
 import com.saivamsi.remaster.response.UserResponse;
 import jakarta.persistence.*;
@@ -55,6 +56,17 @@ public class ApplicationUser implements UserDetails {
     @CreationTimestamp
     @Column(name = "created_at")
     private Date createdAt;
+
+    public ApplicationUser updateUser(UpdateUserRequest user) {
+        this.image = user.getImage();
+        this.username = user.getUsername();
+        this.email = user.getEmail();
+        this.name = user.getName();
+        this.bio = user.getBio();
+        this.password = user.getPassword();
+
+        return this;
+    }
 
     public UserResponse getSafeUser() {
         return UserResponse.builder().id(this.id).username(this.username).email(this.email)

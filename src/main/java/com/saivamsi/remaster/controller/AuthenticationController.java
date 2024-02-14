@@ -22,23 +22,15 @@ import java.util.Arrays;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final TokenService tokenService;
 
-    private ResponseCookie genRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from(tokenService.getRefreshTokenCookieName(), refreshToken).maxAge(tokenService.getRefreshTokenExpires() / 1000)
-                .secure(true)
-                .httpOnly(true)
-                .sameSite("lax").build();
-    }
-
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> registerUser(@RequestBody RegisterRequest request) {
         AuthenticationResponse auth = authenticationService.registerUser(request.getUsername(), request.getEmail(), request.getPassword());
-        ResponseCookie refreshToken = genRefreshTokenCookie(auth.getRefreshToken());
+        ResponseCookie refreshToken = tokenService.generateRefreshTokenCookie(auth.getRefreshToken());
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.SET_COOKIE, refreshToken.toString())
@@ -48,7 +40,7 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> loginUser(@RequestBody LoginRequest request) {
         AuthenticationResponse auth = authenticationService.loginUser(request.getPrincipal(), request.getPassword());
-        ResponseCookie refreshToken = genRefreshTokenCookie(auth.getRefreshToken());
+        ResponseCookie refreshToken = tokenService.generateRefreshTokenCookie(auth.getRefreshToken());
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.SET_COOKIE, refreshToken.toString())
@@ -65,7 +57,7 @@ public class AuthenticationController {
                 .map(Cookie::getValue)
                 .findFirst().orElseThrow(() -> noRefreshToken);
         AuthenticationResponse auth = authenticationService.refreshToken(refreshToken);
-        ResponseCookie newRefreshToken = genRefreshTokenCookie(auth.getRefreshToken());
+        ResponseCookie newRefreshToken = tokenService.generateRefreshTokenCookie(auth.getRefreshToken());
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.SET_COOKIE, newRefreshToken.toString())

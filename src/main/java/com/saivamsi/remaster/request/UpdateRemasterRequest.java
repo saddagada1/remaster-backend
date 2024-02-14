@@ -1,4 +1,4 @@
-package com.saivamsi.remaster.response;
+package com.saivamsi.remaster.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -6,14 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
 import java.util.UUID;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RemasterResponse {
+public class UpdateRemasterRequest {
     @NotNull
     private UUID id;
     @NotNull
@@ -35,10 +34,4 @@ public class RemasterResponse {
     private Integer tuning;
     @NotNull
     private String loops;
-    @NotNull
-    private BasicUserResponse user;
-    @NotNull
-    private Date updatedAt;
-    @NotNull
-    private Date createdAt;
 }
