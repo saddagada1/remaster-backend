@@ -27,4 +27,11 @@ public class UserResponse {
     private Role role;
     @NotNull
     private boolean verified;
+    @NotNull
+    private Integer totalRemasters;
+    @NotNull
+    private Integer totalFollowers;
+    @NotNull
+    private Integer totalFollowing;
+    private Boolean followedBySessionUser;
 }

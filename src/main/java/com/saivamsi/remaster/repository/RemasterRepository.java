@@ -1,13 +1,17 @@
 package com.saivamsi.remaster.repository;
 
 import com.saivamsi.remaster.model.Remaster;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Repository
 public interface RemasterRepository extends JpaRepository<Remaster, UUID> {
     @Query(value = """
             select r.* from Remaster r
@@ -29,6 +33,13 @@ public interface RemasterRepository extends JpaRepository<Remaster, UUID> {
             select r from Remaster r where r.id = :id and r.user.id = :userId
             """)
     Optional<Remaster> findByIdAndUserId(UUID id, UUID userId);
+
+    @Transactional
+    @Modifying
+    @Query("""
+            delete from Remaster r where r.id = :id and r.user.id in (select u.id from ApplicationUser u where u.id = :userId)
+            """)
+    void deleteByIdAndUserId(UUID id, UUID userId);
 
     @Query(value = """
             select r.* from Remaster r

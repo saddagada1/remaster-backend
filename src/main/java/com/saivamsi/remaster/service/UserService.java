@@ -3,6 +3,10 @@ package com.saivamsi.remaster.service;
 import com.saivamsi.remaster.exception.GlobalError;
 import com.saivamsi.remaster.exception.GlobalException;
 import com.saivamsi.remaster.model.ApplicationUser;
+import com.saivamsi.remaster.model.Follow;
+import com.saivamsi.remaster.model.Remaster;
+import com.saivamsi.remaster.model.RemasterLike;
+import com.saivamsi.remaster.repository.FollowRepository;
 import com.saivamsi.remaster.repository.UserRepository;
 import com.saivamsi.remaster.request.UpdateUserRequest;
 import com.saivamsi.remaster.response.PageResponse;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,17 +28,20 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Service s3Service;
 
-    public ApplicationUser getUserByUsername(String username) {
-        Optional<ApplicationUser> user = userRepository.findByUsername(username);
+    public UserResponse getUserByUsername(String username, UUID userId) {
+        UserResponse user = userRepository.findByUsername(username).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build())).getSafeUser();
 
-        if (user.isEmpty()) {
-            throw new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build());
+        if (userId != null) {
+            boolean userIsFollowing = followRepository.findByFollowedIdAndFollowerId(user.getId(), userId).isPresent();
+            user.setFollowedBySessionUser(userIsFollowing);
         }
 
-        return user.get();
+        return user;
     }
     public PageResponse<UserResponse> searchUsers(String query, UUID cursor, Integer limit) {
         List<ApplicationUser> users;
@@ -94,5 +102,25 @@ public class UserService {
 
     public void deleteProfilePicture(ApplicationUser user) {
         s3Service.deleteObject(user.getImage(), true);
+    }
+
+    public void follow(UUID id, ApplicationUser user) {
+        ApplicationUser followed = userRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build()));
+
+        followRepository.save(Follow.builder().followed(followed).follower(user).build());
+        followed = followed.incrementTotalFollowers();
+        user = user.incrementTotalFollowing();
+        userRepository.saveAll(List.of(followed, user));
+    }
+
+    public void unfollow(UUID id, ApplicationUser user) {
+        ApplicationUser followed = userRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build()));
+
+        followRepository.deleteByFollowedIdAndFollowerId(followed.getId(), user.getId());
+        followed = followed.decrementTotalFollowers();
+        user = user.decrementTotalFollowing();
+        userRepository.saveAll(List.of(followed, user));
     }
 }

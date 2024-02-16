@@ -52,14 +52,17 @@ public class AuthenticationService {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .role(Role.USER)
+                .totalRemasters(0)
+                .totalFollowers(0)
+                .totalFollowing(0)
                 .build());
 
 
         Session session = sessionService.createSession(user);
 
-        String verifyEmailToken = UUID.randomUUID().toString();
-        redisTemplate.opsForValue().set(verifyEmailPrefix + verifyEmailToken, user.getId().toString(), Duration.ofDays(1));
-        resendService.sendVerificationEmail(user.getEmail(), "Welcome Aboard!", verifyEmailToken);
+//        String verifyEmailToken = UUID.randomUUID().toString();
+//        redisTemplate.opsForValue().set(verifyEmailPrefix + verifyEmailToken, user.getId().toString(), Duration.ofDays(1));
+//        resendService.sendVerificationEmail(user.getEmail(), "Welcome Aboard!", verifyEmailToken);
 
         return AuthenticationResponse.builder()
                 .user(user.getSafeUser())

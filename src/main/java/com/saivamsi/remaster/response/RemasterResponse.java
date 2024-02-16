@@ -37,6 +37,11 @@ public class RemasterResponse {
     private String loops;
     @NotNull
     private BasicUserResponse user;
+    private Boolean likedBySessionUser;
+    @NotNull
+    private Integer totalLikes;
+    @NotNull
+    private Integer totalPlays;
     @NotNull
     private Date updatedAt;
     @NotNull

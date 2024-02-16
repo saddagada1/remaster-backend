@@ -3,8 +3,13 @@ package com.saivamsi.remaster.service;
 import com.saivamsi.remaster.exception.GlobalError;
 import com.saivamsi.remaster.exception.GlobalException;
 import com.saivamsi.remaster.model.ApplicationUser;
+import com.saivamsi.remaster.model.RemasterLike;
 import com.saivamsi.remaster.model.Remaster;
+import com.saivamsi.remaster.model.RemasterPlay;
+import com.saivamsi.remaster.repository.RemasterLikeRepository;
+import com.saivamsi.remaster.repository.RemasterPlayRepository;
 import com.saivamsi.remaster.repository.RemasterRepository;
+import com.saivamsi.remaster.repository.UserRepository;
 import com.saivamsi.remaster.request.CreateRemasterRequest;
 import com.saivamsi.remaster.request.UpdateRemasterRequest;
 import com.saivamsi.remaster.response.PageResponse;
@@ -21,26 +26,44 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RemasterService {
     private final RemasterRepository remasterRepository;
+    private final UserRepository userRepository;
+    private final RemasterLikeRepository remasterLikeRepository;
+    private final RemasterPlayRepository remasterPlayRepository;
 
-    public RemasterResponse createRemaster (CreateRemasterRequest remaster, ApplicationUser user) {
+    public RemasterResponse createRemaster (CreateRemasterRequest remasterRequest, ApplicationUser user) {
 //        if (!user.isVerified()) {
 //            throw new GlobalException(HttpStatus.BAD_REQUEST, GlobalError.builder().subject("user").message("please verify your account before proceeding").build());
 //        }
 
-        return remasterRepository.save(Remaster.builder().url(remaster.getUrl()).name(remaster.getName()).description(remaster.getDescription())
-                .duration(remaster.getDuration()).key(remaster.getKey()).mode(remaster.getMode()).tempo(remaster.getTempo()).timeSignature(remaster.getTimeSignature())
-                .tuning(remaster.getTuning()).user(user).build()
-        ).getRemasterResponse();
+        Remaster remaster = remasterRepository.save(Remaster.builder().url(remasterRequest.getUrl()).name(remasterRequest.getName()).description(remasterRequest.getDescription())
+                .duration(remasterRequest.getDuration()).key(remasterRequest.getKey()).mode(remasterRequest.getMode()).tempo(remasterRequest.getTempo())
+                .timeSignature(remasterRequest.getTimeSignature())
+                .tuning(remasterRequest.getTuning())
+                .totalPlays(0)
+                .totalLikes(0)
+                .user(user).build()
+        );
+
+        user.setTotalRemasters(user.getTotalRemasters() + 1);
+        userRepository.save(user);
+
+        return remaster.getRemasterResponse();
     }
 
     public RemasterResponse updateRemaster (UpdateRemasterRequest remaster, ApplicationUser user) {
-        Optional<Remaster> userRemaster = remasterRepository.findByIdAndUserId(remaster.getId(), user.getId());
+        Optional<Remaster> userRemaster = remasterRepository.findByIdAndUserId(UUID.fromString(remaster.getId()), user.getId());
 
         if (userRemaster.isEmpty()) {
             throw new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build());
         }
 
         return remasterRepository.save(userRemaster.get().updateRemaster(remaster)).getRemasterResponse();
+    }
+
+    public void deleteRemaster (UUID id, ApplicationUser user) {
+        remasterRepository.deleteByIdAndUserId(id, user.getId());
+        user.setTotalRemasters(user.getTotalRemasters() - 1);
+        userRepository.save(user);
     }
 
     public RemasterResponse getUserRemaster(UUID id, ApplicationUser user) {
@@ -74,14 +97,17 @@ public class RemasterService {
         return new PageResponse<>(next, remasterResponses);
     }
 
-    public RemasterResponse getRemaster(UUID id) {
-        Optional<Remaster> userRemaster = remasterRepository.findById(id);
+    public RemasterResponse getRemaster(UUID id, UUID userId) {
+        RemasterResponse remaster = remasterRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build())).getRemasterResponse();
 
-        if (userRemaster.isEmpty()) {
-            throw new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build());
+
+        if (userId != null) {
+            boolean userHasLiked = remasterLikeRepository.findByRemasterIdAndUserId(id, userId).isPresent();
+            remaster.setLikedBySessionUser(userHasLiked);
         }
 
-        return userRemaster.get().getRemasterResponse();
+        return remaster;
     }
 
     public PageResponse<RemasterResponse> getAllRemastersByUserId(UUID id, UUID cursor, Integer limit) {
@@ -124,5 +150,45 @@ public class RemasterService {
                 .toList();
 
         return new PageResponse<>(next, remasterResponses);
+    }
+
+    public void createOrUpdatePlay(UUID id, UUID userId) {
+        Remaster remaster = remasterRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build()));
+
+        if (userId != null) {
+            RemasterPlay play;
+            Optional<RemasterPlay> existingPlay = remasterPlayRepository.findByRemasterIdAndUserId(id, userId);
+            if (existingPlay.isEmpty()) {
+                 ApplicationUser user = userRepository.findById(userId).orElseThrow(() ->
+                        new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build()));
+                play = remasterPlayRepository.save(RemasterPlay.builder().remaster(remaster).count(0).user(user).build());
+            } else {
+                play = existingPlay.get();
+            }
+            play = play.incrementCount();
+            remasterPlayRepository.save(play);
+        }
+
+        remaster = remaster.incrementTotalPlays();
+        remasterRepository.save(remaster);
+    }
+
+    public void like(UUID id, ApplicationUser user) {
+        Remaster remaster = remasterRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build()));
+
+        remasterLikeRepository.save(RemasterLike.builder().remaster(remaster).user(user).build());
+        remaster = remaster.incrementTotalLikes();
+        remasterRepository.save(remaster);
+    }
+
+    public void unlike(UUID id, ApplicationUser user) {
+        Remaster remaster = remasterRepository.findById(id).orElseThrow(() ->
+                new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("remaster").message("remaster not found").build()));
+
+        remasterLikeRepository.deleteByRemasterIdAndUserId(id, user.getId());
+        remaster = remaster.decrementTotalLikes();
+        remasterRepository.save(remaster);
     }
 }

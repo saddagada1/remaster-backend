@@ -73,21 +73,21 @@ public class AuthenticationController {
     }
 
     @PostMapping("/auth/verify-email")
-    public ResponseEntity<String> verifyEmail(String token) {
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         authenticationService.verifyEmail(token);
         return ResponseEntity
                 .ok("success");
     }
 
     @PostMapping("/auth/send-forgot-password-email")
-    public ResponseEntity<String> sendForgotPasswordEmail(String email) {
+    public ResponseEntity<String> sendForgotPasswordEmail(@RequestParam String email) {
         authenticationService.sendForgotPasswordEmail(email);
         return ResponseEntity
                 .ok("success");
     }
 
     @PostMapping("/auth/change-forgotten-password")
-    public ResponseEntity<AuthenticationResponse> changeForgottenPassword(String token, String password) {
+    public ResponseEntity<AuthenticationResponse> changeForgottenPassword(@RequestParam  String token, @RequestParam String password) {
         AuthenticationResponse auth = authenticationService.changeForgottenPassword(token, password);
         ResponseCookie refreshTokenCookie = sessionService.generateRefreshTokenCookie(auth.getRefreshToken());
         return ResponseEntity

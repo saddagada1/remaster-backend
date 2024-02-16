@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class UpdateRemasterRequest {
     @NotNull
-    private UUID id;
+    private String id;
     @NotNull
     private String url;
     @NotNull

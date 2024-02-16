@@ -29,6 +29,12 @@ public class RemasterController {
         return ResponseEntity.ok(remasterService.updateRemaster(request, user));
     }
 
+    @DeleteMapping("/user/remaster")
+    public ResponseEntity<String> deleteRemaster(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
+        remasterService.deleteRemaster(id, user);
+        return ResponseEntity.ok("success");
+    }
+
     @GetMapping("/user/remaster/{id}")
     public ResponseEntity<RemasterResponse> getUserRemaster(@PathVariable UUID id, @AuthenticationPrincipal ApplicationUser user) {
         return ResponseEntity
@@ -42,9 +48,9 @@ public class RemasterController {
     }
 
     @GetMapping("/open/remaster/{id}")
-    public ResponseEntity<RemasterResponse> getRemaster(@PathVariable UUID id) {
+    public ResponseEntity<RemasterResponse> getRemaster(@PathVariable UUID id, @RequestParam(required = false) UUID userId) {
         return ResponseEntity
-                .ok(remasterService.getRemaster(id));
+                .ok(remasterService.getRemaster(id, userId));
     }
 
     @GetMapping("/open/remaster/all/{id}")
@@ -57,5 +63,23 @@ public class RemasterController {
     public ResponseEntity<PageResponse<RemasterResponse>> searchRemasters(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit, @RequestParam String q) {
         return ResponseEntity
                 .ok(remasterService.searchRemasters(q, cursor, limit));
+    }
+
+    @PostMapping("/user/remaster/like")
+    public ResponseEntity<String> likeRemaster(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
+        remasterService.like(id, user);
+        return ResponseEntity.ok("success");
+    }
+
+    @PostMapping("/user/remaster/unlike")
+    public ResponseEntity<String> unlikeRemaster(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
+        remasterService.unlike(id, user);
+        return ResponseEntity.ok("success");
+    }
+
+    @PostMapping("/open/remaster/play")
+    public ResponseEntity<String> createOrUpdateRemasterPlays(@RequestParam UUID id, @RequestParam(required = false) UUID userId) {
+        remasterService.createOrUpdatePlay(id, userId);
+        return ResponseEntity.ok("success");
     }
 }

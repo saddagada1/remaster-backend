@@ -1,5 +1,6 @@
 package com.saivamsi.remaster.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.saivamsi.remaster.request.UpdateRemasterRequest;
 import com.saivamsi.remaster.response.RemasterResponse;
@@ -11,9 +12,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.descriptor.converter.internal.ArrayConverter;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -34,15 +35,15 @@ public class Remaster {
     private String description;
     @Column()
     private Float duration;
-    @Column(columnDefinition = "integer default 0")
+    @Column()
     private Integer key;
-    @Column(columnDefinition = "integer default 0")
+    @Column()
     private Integer mode;
-    @Column(columnDefinition = "float default 80.0")
+    @Column()
     private Float tempo;
-    @Column(columnDefinition = "integer default 3")
+    @Column()
     private Integer timeSignature;
-    @Column(columnDefinition = "integer default 0")
+    @Column()
     private Integer tuning;
     @Column(columnDefinition = "json")
     @ColumnTransformer(write = "?::jsonb")
@@ -51,6 +52,16 @@ public class Remaster {
     @JoinColumn(name = "user_id")
     @JsonIncludeProperties({ "id", "username" })
     private ApplicationUser user;
+    @JsonIgnore
+    @OneToMany(mappedBy = "remaster", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RemasterLike> likes;
+    @Column()
+    private Integer totalLikes;
+    @JsonIgnore
+    @OneToMany(mappedBy = "remaster", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RemasterPlay> plays;
+    @Column()
+    private Integer totalPlays;
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
@@ -60,7 +71,12 @@ public class Remaster {
 
     public RemasterResponse getRemasterResponse() {
         return RemasterResponse.builder().id(this.id).url(this.url).name(this.name).description(this.description).duration(this.duration).key(this.key)
-                .mode(this.mode).tempo(this.tempo).timeSignature(this.timeSignature).tuning(this.tuning).loops(this.loops).user(this.user.getBasicUser()).updatedAt(this.updatedAt)
+                .mode(this.mode).tempo(this.tempo).timeSignature(this.timeSignature).tuning(this.tuning)
+                .loops(this.loops)
+                .user(this.user.getBasicUser())
+                .totalLikes(this.totalLikes)
+                .totalPlays(this.totalPlays)
+                .updatedAt(this.updatedAt)
                 .createdAt(this.createdAt).build();
     }
 
@@ -76,6 +92,21 @@ public class Remaster {
         this.tuning = remaster.getTuning();
         this.loops = remaster.getLoops();
 
+        return this;
+    }
+
+    public Remaster incrementTotalLikes() {
+        this.totalLikes += 1;
+        return this;
+    }
+
+    public Remaster decrementTotalLikes() {
+        this.totalLikes -= 1;
+        return this;
+    }
+
+    public Remaster incrementTotalPlays() {
+        this.totalPlays += 1;
         return this;
     }
 }

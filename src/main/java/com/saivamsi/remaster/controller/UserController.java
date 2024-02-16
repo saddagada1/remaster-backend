@@ -6,7 +6,6 @@ import com.saivamsi.remaster.request.UpdateUserRequest;
 import com.saivamsi.remaster.response.AuthenticationResponse;
 import com.saivamsi.remaster.response.PageResponse;
 import com.saivamsi.remaster.response.UserResponse;
-import com.saivamsi.remaster.service.PrincipleService;
 import com.saivamsi.remaster.service.SessionService;
 import com.saivamsi.remaster.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +23,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final PrincipleService principleService;
     private final UserService userService;
     private final SessionService sessionService;
 
-    @GetMapping("/open/{username}")
-    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
+    @GetMapping("/open/search/{username}")
+    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username, @RequestParam(required = false) UUID userId) {
         return ResponseEntity
-                .ok(userService.getUserByUsername(username).getSafeUser());
+                .ok(userService.getUserByUsername(username, userId));
     }
 
     @GetMapping("/open/search")
@@ -50,7 +48,6 @@ public class UserController {
         }
 
         if (request.getImage() == null && user.getImage() != null) {
-            System.out.println("test");
             userService.deleteProfilePicture(user);
         }
 
@@ -73,5 +70,17 @@ public class UserController {
 
         return ResponseEntity
                 .ok(AuthenticationResponse.builder().user(userUpdate).build());
+    }
+
+    @PostMapping("/user/follow")
+    public ResponseEntity<String> followUser(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
+        userService.follow(id, user);
+        return ResponseEntity.ok("success");
+    }
+
+    @PostMapping("/user/unfollow")
+    public ResponseEntity<String> unfollowUser(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
+        userService.unfollow(id, user);
+        return ResponseEntity.ok("success");
     }
 }

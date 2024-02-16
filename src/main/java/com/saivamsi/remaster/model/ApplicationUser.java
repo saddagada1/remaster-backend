@@ -50,6 +50,24 @@ public class ApplicationUser implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Remaster> remasters;
+    @Column()
+    private Integer totalRemasters;
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RemasterLike> likes;
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RemasterPlay> plays;
+    @JsonIgnore
+    @OneToMany(mappedBy = "followed", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Follow> followers;
+    @JsonIgnore
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Follow> following;
+    @Column()
+    private Integer totalFollowers;
+    @Column()
+    private Integer totalFollowing;
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
@@ -70,11 +88,35 @@ public class ApplicationUser implements UserDetails {
 
     public UserResponse getSafeUser() {
         return UserResponse.builder().id(this.id).username(this.username).email(this.email)
-                .name(this.name).bio(this.bio).image(this.image).role(this.role).verified(this.verified).build();
+                .name(this.name).bio(this.bio).image(this.image).role(this.role).verified(this.verified)
+                .totalRemasters(this.totalRemasters)
+                .totalFollowers(this.totalFollowers)
+                .totalFollowing(this.totalFollowing)
+                .build();
     }
 
     public BasicUserResponse getBasicUser() {
         return BasicUserResponse.builder().id(this.id).username(this.username).build();
+    }
+
+    public ApplicationUser incrementTotalFollowers() {
+        this.totalFollowers += 1;
+        return this;
+    }
+
+    public ApplicationUser decrementTotalFollowers() {
+        this.totalFollowers -= 1;
+        return this;
+    }
+
+    public ApplicationUser incrementTotalFollowing() {
+        this.totalFollowing += 1;
+        return this;
+    }
+
+    public ApplicationUser decrementTotalFollowing() {
+        this.totalFollowing -= 1;
+        return this;
     }
 
     @Override
