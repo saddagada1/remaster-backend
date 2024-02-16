@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +24,17 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final S3Service s3Service;
+
+    public ApplicationUser getUserByUsername(String username) {
+        Optional<ApplicationUser> user = userRepository.findByUsername(username);
+
+        if (user.isEmpty()) {
+            throw new GlobalException(HttpStatus.NOT_FOUND, GlobalError.builder().subject("user").message("user not found").build());
+        }
+
+        return user.get();
+    }
     public PageResponse<UserResponse> searchUsers(String query, UUID cursor, Integer limit) {
         List<ApplicationUser> users;
         if (cursor == null) {
@@ -65,5 +78,21 @@ public class UserService {
         }
 
         return userRepository.save(user.updateUser(userUpdate)).getSafeUser();
+    }
+
+    public String uploadProfilePicture(MultipartFile image, ApplicationUser user) {
+        if (user.getImage() != null) {
+            s3Service.deleteObject(user.getImage(), true);
+        }
+        try {
+            String key = "profile-pictures/%s/%s".formatted(user.getId(), UUID.randomUUID().toString());
+            return s3Service.putObject(key, image.getBytes());
+        } catch (IOException e) {
+            throw new GlobalException(HttpStatus.INTERNAL_SERVER_ERROR, GlobalError.builder().subject("profile picture").message("could not upload").build());
+        }
+    }
+
+    public void deleteProfilePicture(ApplicationUser user) {
+        s3Service.deleteObject(user.getImage(), true);
     }
 }

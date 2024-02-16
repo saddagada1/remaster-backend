@@ -13,3 +13,8 @@ spring:
       format_sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  main:
+    web-application-type: servlet
+  servlet:
+    multipart:
+      max-file-size: 2MB

@@ -1,8 +1,7 @@
 package com.saivamsi.remaster.filter;
 
 import com.saivamsi.remaster.model.ApplicationUser;
-import com.saivamsi.remaster.repository.TokenRepository;
-import com.saivamsi.remaster.service.TokenService;
+import com.saivamsi.remaster.service.SessionService;
 import com.saivamsi.remaster.service.PrincipleService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,8 +22,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
 
-    private final TokenRepository tokenRepository;
-    private final TokenService tokenService;
+    private final SessionService sessionService;
     private final PrincipleService principleService;
 
     @Override
@@ -37,12 +35,11 @@ public class JWTFilter extends OncePerRequestFilter {
         }
 
         final String token = authHeader.split(" ", 2)[1];
-        final String userPrinciple = tokenService.extractSubject(token, "access_token");
+        final String userPrinciple = sessionService.extractSubject(token, "access_token");
 
         if (userPrinciple != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             ApplicationUser user = principleService.loadUserByUsername(userPrinciple);
-            boolean isTokenInUse = tokenRepository.findByToken(token).map(t -> !t.isExpired() && !t.isRevoked()).orElse(false);
-            if (tokenService.isTokenValid(token, user, "access_token") && isTokenInUse) {
+            if (sessionService.isSessionValid(token, user, "access_token")) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);

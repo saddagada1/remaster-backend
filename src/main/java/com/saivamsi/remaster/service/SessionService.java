@@ -1,8 +1,8 @@
 package com.saivamsi.remaster.service;
 
 import com.saivamsi.remaster.model.ApplicationUser;
-import com.saivamsi.remaster.model.Token;
-import com.saivamsi.remaster.repository.TokenRepository;
+import com.saivamsi.remaster.model.Session;
+import com.saivamsi.remaster.repository.SessionRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -26,7 +25,7 @@ import java.util.function.Function;
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class TokenService {
+public class SessionService {
 
     @Value("${ACCESS_TOKEN_SECRET}")
     private String accessTokenSecret;
@@ -38,7 +37,7 @@ public class TokenService {
     private Long refreshTokenExpires;
     @Value("${REFRESH_TOKEN_COOKIE_NAME}")
     private String refreshTokenCookieName;
-    private final TokenRepository tokenRepository;
+    private final SessionRepository sessionRepository;
 
     public String extractSubject(String token, String tokenType) {
         return extractClaim(token, Claims::getSubject, tokenType);
@@ -63,11 +62,11 @@ public class TokenService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(ApplicationUser user) {
-        return generateToken(new HashMap<>(), user);
+    public String generateAccessToken(ApplicationUser user) {
+        return generateAccessToken(new HashMap<>(), user);
     }
 
-    public String generateToken(Map<String, Object> extraClaims, ApplicationUser user) {
+    public String generateAccessToken(Map<String, Object> extraClaims, ApplicationUser user) {
         return buildToken(extraClaims, user, accessTokenExpires, "access_token");
     }
 
@@ -94,9 +93,15 @@ public class TokenService {
                 .compact();
     }
 
-    public boolean isTokenValid(String token, ApplicationUser user, String tokenType) {
+    public boolean isSessionValid(String token, ApplicationUser user, String tokenType) {
         final String subject = extractSubject(token, tokenType);
-        return ((subject.equals(user.getUsername()) || subject.equals(user.getEmail())) && !isTokenExpired(token, tokenType));
+        Boolean sessionExists;
+        if (tokenType.equals("access_token")) {
+            sessionExists = sessionRepository.existsByAccessToken(token);
+        } else {
+            sessionExists = sessionRepository.existsByRefreshToken(token);
+        }
+        return ((subject.equals(user.getUsername()) || subject.equals(user.getEmail())) && !isTokenExpired(token, tokenType) && sessionExists);
     }
 
     public boolean isTokenExpired(String token, String tokenType) {
@@ -107,42 +112,34 @@ public class TokenService {
         return extractClaim(token, Claims::getExpiration, tokenType);
     }
 
-    public void saveTokens(ApplicationUser user, String token, String refreshToken) {
-        tokenRepository.saveAll(List.of(Token.builder()
-                .user(user)
-                .token(token)
-                .type("access_token")
-                .build(), Token.builder()
-                .user(user)
-                .token(refreshToken)
-                .type("access_token")
-                .build()));
+    public void revokeAllSessionsForUser(ApplicationUser user) {
+        sessionRepository.deleteAllSessionsByUser(user.getId());
     }
 
-    public void revokeAllTokensForUser(ApplicationUser user) {
-        List<Token> tokens = tokenRepository.findAllValidTokensByUser(user.getId());
-
-        if (tokens.isEmpty()) return;
-
-        tokens.forEach(t -> {
-            t.setRevoked(true);
-            t.setExpired(true);
-        });
-
-        tokenRepository.saveAll(tokens);
-    }
-
-    public void revokeTokenForUser(String token) {
-        Token savedToken = tokenRepository.findByToken(token).orElse(null);
-
-        if (savedToken != null) {
-            savedToken.setExpired(true);
-            savedToken.setRevoked(true);
-            tokenRepository.save(savedToken);
+    public void revokeSessionForUser(String token, String tokenType) {
+        if (tokenType.equals("access_token")) {
+            sessionRepository.deleteByAccessToken(token);
+        } else {
+            sessionRepository.deleteByRefreshToken(token);
         }
     }
 
-    public boolean isTokenInUse(String token) {
-        return tokenRepository.findByToken(token).map(t -> !t.isExpired() && !t.isRevoked()).orElse(false);
+    public Session createSession(ApplicationUser user) {
+        String accessToken = generateAccessToken(user);
+        String refreshToken = generateRefreshToken(user);
+        Date accessTokenExpiresAt = extractExpiration(accessToken, "access_token");
+        Date refreshTokenExpiresAt = extractExpiration(refreshToken, "refresh_token");
+
+        return sessionRepository.save(Session.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .accessTokenExpiresAt(accessTokenExpiresAt)
+                .refreshTokenExpiresAt(refreshTokenExpiresAt)
+                .build());
+    }
+
+    public Session refreshSession(String refreshToken, ApplicationUser user) {
+        sessionRepository.deleteByRefreshToken(refreshToken);
+        return createSession(user);
     }
 }

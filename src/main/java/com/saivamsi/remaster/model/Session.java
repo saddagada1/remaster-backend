@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.UUID;
 
 @Entity
@@ -13,17 +14,17 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Token {
+public class Session {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    private String token;
-    private String type;
-    @Column(columnDefinition = "boolean default false")
-    private boolean expired;
-    @Column(columnDefinition = "boolean default false")
-    private boolean revoked;
+    private String accessToken;
+    private String refreshToken;
+    @Column()
+    private Date accessTokenExpiresAt;
+    @Column()
+    private Date refreshTokenExpiresAt;
     @ManyToOne
     @JoinColumn(name = "user_id")
     private ApplicationUser user;

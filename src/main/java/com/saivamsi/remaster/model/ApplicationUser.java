@@ -46,7 +46,7 @@ public class ApplicationUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
     @OneToMany(mappedBy = "user")
-    private List<Token> tokens;
+    private List<Session> sessions;
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Remaster> remasters;
