@@ -29,19 +29,17 @@ public class RemasterService {
     private final UserRepository userRepository;
     private final RemasterLikeRepository remasterLikeRepository;
     private final RemasterPlayRepository remasterPlayRepository;
+    private final RankingService rankingService;
 
     public RemasterResponse createRemaster (CreateRemasterRequest remasterRequest, ApplicationUser user) {
 //        if (!user.isVerified()) {
 //            throw new GlobalException(HttpStatus.BAD_REQUEST, GlobalError.builder().subject("user").message("please verify your account before proceeding").build());
 //        }
 
-        Remaster remaster = remasterRepository.save(Remaster.builder().url(remasterRequest.getUrl()).name(remasterRequest.getName()).description(remasterRequest.getDescription())
-                .duration(remasterRequest.getDuration()).key(remasterRequest.getKey()).mode(remasterRequest.getMode()).tempo(remasterRequest.getTempo())
-                .timeSignature(remasterRequest.getTimeSignature())
-                .tuning(remasterRequest.getTuning())
-                .totalPlays(0)
-                .totalLikes(0)
-                .user(user).build()
+        Remaster remaster = remasterRepository.save(new Remaster(remasterRequest.getUrl(), remasterRequest.getName(), remasterRequest.getDescription(),
+                remasterRequest.getDuration(), remasterRequest.getKey(), remasterRequest.getMode(),
+                remasterRequest.getTempo(), remasterRequest.getTimeSignature(), remasterRequest.getTuning(),
+                user)
         );
 
         user.setTotalRemasters(user.getTotalRemasters() + 1);
@@ -172,6 +170,8 @@ public class RemasterService {
 
         remaster = remaster.incrementTotalPlays();
         remasterRepository.save(remaster);
+
+        rankingService.queuePlay(remaster);
     }
 
     public void like(UUID id, ApplicationUser user) {
@@ -181,6 +181,8 @@ public class RemasterService {
         remasterLikeRepository.save(RemasterLike.builder().remaster(remaster).user(user).build());
         remaster = remaster.incrementTotalLikes();
         remasterRepository.save(remaster);
+
+        rankingService.queueLike(remaster);
     }
 
     public void unlike(UUID id, ApplicationUser user) {
@@ -190,5 +192,70 @@ public class RemasterService {
         remasterLikeRepository.deleteByRemasterIdAndUserId(id, user.getId());
         remaster = remaster.decrementTotalLikes();
         remasterRepository.save(remaster);
+
+        rankingService.dequeueLike(remaster);
+    }
+
+    public PageResponse<RemasterResponse> getTrendingRemasters(UUID cursor, Integer limit) {
+        List<Remaster> remasters;
+        if (cursor == null) {
+            remasters = remasterRepository.findTrending(limit + 1);
+        } else {
+            remasters = remasterRepository.findTrendingWithCursor(cursor, limit + 1);
+        }
+
+        UUID next = null;
+        if (remasters.size() > limit) {
+            Remaster last = remasters.removeLast();
+            next = last.getId();
+        }
+
+        List<RemasterResponse> remasterResponses = remasters.stream()
+                .map(Remaster::getRemasterResponse)
+                .toList();
+
+        return new PageResponse<>(next, remasterResponses);
+    }
+
+    public PageResponse<RemasterResponse> getFavouriteRemasters(UUID cursor, Integer limit) {
+        List<Remaster> remasters;
+        if (cursor == null) {
+            remasters = remasterRepository.findFavourites(limit + 1);
+        } else {
+            remasters = remasterRepository.findFavouritesWithCursor(cursor, limit + 1);
+        }
+
+        UUID next = null;
+        if (remasters.size() > limit) {
+            Remaster last = remasters.removeLast();
+            next = last.getId();
+        }
+
+        List<RemasterResponse> remasterResponses = remasters.stream()
+                .map(Remaster::getRemasterResponse)
+                .toList();
+
+        return new PageResponse<>(next, remasterResponses);
+    }
+
+    public PageResponse<RemasterResponse> getRecentRemasters(UUID cursor, Integer limit) {
+        List<Remaster> remasters;
+        if (cursor == null) {
+            remasters = remasterRepository.findRecent(limit + 1);
+        } else {
+            remasters = remasterRepository.findRecentWithCursor(cursor, limit + 1);
+        }
+
+        UUID next = null;
+        if (remasters.size() > limit) {
+            Remaster last = remasters.removeLast();
+            next = last.getId();
+        }
+
+        List<RemasterResponse> remasterResponses = remasters.stream()
+                .map(Remaster::getRemasterResponse)
+                .toList();
+
+        return new PageResponse<>(next, remasterResponses);
     }
 }

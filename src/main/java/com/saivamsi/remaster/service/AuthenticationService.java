@@ -47,16 +47,7 @@ public class AuthenticationService {
             }
         }
 
-        ApplicationUser user = userRepository.save(ApplicationUser.builder()
-                .username(username)
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .role(Role.USER)
-                .totalRemasters(0)
-                .totalFollowers(0)
-                .totalFollowing(0)
-                .build());
-
+        ApplicationUser user = userRepository.save(new ApplicationUser(username, email, passwordEncoder.encode(password), Role.USER));
 
         Session session = sessionService.createSession(user);
 

@@ -82,4 +82,22 @@ public class RemasterController {
         remasterService.createOrUpdatePlay(id, userId);
         return ResponseEntity.ok("success");
     }
+
+    @GetMapping("/open/remaster/trending")
+    public ResponseEntity<PageResponse<RemasterResponse>> getTrendingRemasters(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit) {
+        return ResponseEntity
+                .ok(remasterService.getTrendingRemasters(cursor, limit));
+    }
+
+    @GetMapping("/open/remaster/favourite")
+    public ResponseEntity<PageResponse<RemasterResponse>> getFavouriteRemasters(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit) {
+        return ResponseEntity
+                .ok(remasterService.getFavouriteRemasters(cursor, limit));
+    }
+
+    @GetMapping("/open/remaster/recent")
+    public ResponseEntity<PageResponse<RemasterResponse>> getRecentRemasters(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit) {
+        return ResponseEntity
+                .ok(remasterService.getRecentRemasters(cursor, limit));
+    }
 }

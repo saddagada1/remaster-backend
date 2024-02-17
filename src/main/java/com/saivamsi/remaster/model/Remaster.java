@@ -33,18 +33,18 @@ public class Remaster {
     private String name;
     @Column(nullable = true, columnDefinition = "text")
     private String description;
-    @Column()
-    private Float duration;
-    @Column()
-    private Integer key;
-    @Column()
-    private Integer mode;
-    @Column()
-    private Float tempo;
-    @Column()
-    private Integer timeSignature;
-    @Column()
-    private Integer tuning;
+    @Column(columnDefinition = "float default 0.0")
+    private Float duration = 0.0F;
+    @Column(columnDefinition = "integer default 0")
+    private Integer key = 0;
+    @Column(columnDefinition = "integer default 0")
+    private Integer mode = 0;
+    @Column(columnDefinition = "float default 80.0")
+    private Float tempo = 80.0F;
+    @Column(columnDefinition = "integer default 3")
+    private Integer timeSignature = 3;
+    @Column(columnDefinition = "integer default 0")
+    private Integer tuning = 0;
     @Column(columnDefinition = "json")
     @ColumnTransformer(write = "?::jsonb")
     private String loops;
@@ -55,13 +55,25 @@ public class Remaster {
     @JsonIgnore
     @OneToMany(mappedBy = "remaster", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<RemasterLike> likes;
-    @Column()
-    private Integer totalLikes;
+    @Column(columnDefinition = "integer default 0")
+    private Integer totalLikes = 0;
     @JsonIgnore
     @OneToMany(mappedBy = "remaster", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<RemasterPlay> plays;
+    @Column(columnDefinition = "integer default 0")
+    private Integer totalPlays = 0;
     @Column()
-    private Integer totalPlays;
+    private List<Integer> pastLikeCounts = List.of(totalLikes);
+    @Column()
+    private List<Integer> pastPlayCounts = List.of(totalPlays);
+    @Column(columnDefinition = "float default 0.0")
+    private Float likeRank = 0.0F;
+    @Column(columnDefinition = "float default 0.0")
+    private Float playRank = 0.0F;
+    @Column()
+    private List<Float> pastLikeRanks = List.of(likeRank);
+    @Column()
+    private List<Float> pastPlayRanks = List.of(playRank);
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
@@ -69,9 +81,34 @@ public class Remaster {
     @Column(name = "created_at")
     private Date createdAt;
 
+    public Remaster(String url, String name, String description,
+                    Float duration, Integer key, Integer mode,
+                    Float tempo, Integer timeSignature, Integer tuning,
+                    ApplicationUser user) {
+        this.url = url;
+        this.name = name;
+        this.description = description;
+        this.duration = duration;
+        this.key = key;
+        this.mode = mode;
+        this.tempo = tempo;
+        this.timeSignature = timeSignature;
+        this.tuning = tuning;
+        this.user = user;
+    }
+
     public RemasterResponse getRemasterResponse() {
-        return RemasterResponse.builder().id(this.id).url(this.url).name(this.name).description(this.description).duration(this.duration).key(this.key)
-                .mode(this.mode).tempo(this.tempo).timeSignature(this.timeSignature).tuning(this.tuning)
+        return RemasterResponse.builder()
+                .id(this.id)
+                .url(this.url)
+                .name(this.name)
+                .description(this.description)
+                .duration(this.duration)
+                .key(this.key)
+                .mode(this.mode)
+                .tempo(this.tempo)
+                .timeSignature(this.timeSignature)
+                .tuning(this.tuning)
                 .loops(this.loops)
                 .user(this.user.getBasicUser())
                 .totalLikes(this.totalLikes)

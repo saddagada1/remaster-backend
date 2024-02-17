@@ -29,6 +29,49 @@ public interface RemasterRepository extends JpaRepository<Remaster, UUID> {
             limit :limit
             """, nativeQuery = true)
     List<Remaster> findAllByUserId(UUID userId, Integer limit);
+
+    @Query(value = """
+            select r.* from Remaster r
+            where r.id >= :cursor
+            order by r.play_rank desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findTrendingWithCursor(UUID cursor, Integer limit);
+    @Query(value = """
+            select r.* from Remaster r
+            order by r.play_rank desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findTrending(Integer limit);
+
+    @Query(value = """
+            select r.* from Remaster r
+            where r.id >= :cursor
+            order by r.like_rank desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findFavouritesWithCursor(UUID cursor, Integer limit);
+    @Query(value = """
+            select r.* from Remaster r
+            order by r.like_rank desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findFavourites(Integer limit);
+
+    @Query(value = """
+            select r.* from Remaster r
+            where r.id >= :cursor
+            order by r.created_at desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findRecentWithCursor(UUID cursor, Integer limit);
+    @Query(value = """
+            select r.* from Remaster r
+            order by r.created_at desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Remaster> findRecent(Integer limit);
+
     @Query("""
             select r from Remaster r where r.id = :id and r.user.id = :userId
             """)

@@ -42,16 +42,17 @@ public class ApplicationUser implements UserDetails {
     @Column(nullable = true)
     private String image;
     @Column(columnDefinition = "boolean default false")
-    private boolean verified;
+    private boolean verified = false;
     @Enumerated(EnumType.STRING)
     private Role role;
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<Session> sessions;
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Remaster> remasters;
-    @Column()
-    private Integer totalRemasters;
+    @Column(columnDefinition = "integer default 0")
+    private Integer totalRemasters = 0;
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<RemasterLike> likes;
@@ -64,16 +65,23 @@ public class ApplicationUser implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Follow> following;
-    @Column()
-    private Integer totalFollowers;
-    @Column()
-    private Integer totalFollowing;
+    @Column(columnDefinition = "integer default 0")
+    private Integer totalFollowers = 0;
+    @Column(columnDefinition = "integer default 0")
+    private Integer totalFollowing = 0;
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
     @CreationTimestamp
     @Column(name = "created_at")
     private Date createdAt;
+
+    public ApplicationUser(String username, String email, String password, Role role) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
 
     public ApplicationUser updateUser(UpdateUserRequest user) {
         this.image = user.getImage();
