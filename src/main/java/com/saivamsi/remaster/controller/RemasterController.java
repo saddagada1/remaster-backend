@@ -3,6 +3,7 @@ package com.saivamsi.remaster.controller;
 import com.saivamsi.remaster.model.ApplicationUser;
 import com.saivamsi.remaster.request.CreateRemasterRequest;
 import com.saivamsi.remaster.request.UpdateRemasterRequest;
+import com.saivamsi.remaster.response.BasicRemasterResponse;
 import com.saivamsi.remaster.response.PageResponse;
 import com.saivamsi.remaster.response.RemasterResponse;
 import com.saivamsi.remaster.service.RemasterService;
@@ -75,6 +76,12 @@ public class RemasterController {
     public ResponseEntity<String> unlikeRemaster(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
         remasterService.unlike(id, user);
         return ResponseEntity.ok("success");
+    }
+
+    @GetMapping("/user/remaster/like")
+    public ResponseEntity<PageResponse<BasicRemasterResponse>> getUserLikedRemasters(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit, @AuthenticationPrincipal ApplicationUser user) {
+        return ResponseEntity
+                .ok(remasterService.getUserLikedRemasters(user, cursor, limit));
     }
 
     @PostMapping("/open/remaster/play")

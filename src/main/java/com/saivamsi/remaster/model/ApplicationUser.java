@@ -104,7 +104,7 @@ public class ApplicationUser implements UserDetails {
     }
 
     public BasicUserResponse getBasicUser() {
-        return BasicUserResponse.builder().id(this.id).username(this.username).build();
+        return BasicUserResponse.builder().id(this.id).username(this.username).name(this.name).image(this.image).build();
     }
 
     public ApplicationUser incrementTotalFollowers() {

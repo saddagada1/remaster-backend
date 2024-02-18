@@ -30,7 +30,7 @@ public class RankingService {
         likesToRank.remove(remaster);
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "@hourly")
     public void rankPlays() {
         Map<UUID, ObjectWithCount<Remaster>> countedPlays = new HashMap<>();
         for (Remaster remaster : playsToRank) {
@@ -68,7 +68,7 @@ public class RankingService {
         System.out.println("Ranked Plays");
     }
 
-    @Scheduled(cron = "0 */30 * * * *")
+    @Scheduled(cron = "0 30 * * * *")
     public void rankLikes() {
         Map<UUID, ObjectWithCount<Remaster>> countedLikes = new HashMap<>();
         for (Remaster remaster : likesToRank) {

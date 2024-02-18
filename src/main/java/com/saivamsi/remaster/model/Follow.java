@@ -1,5 +1,6 @@
 package com.saivamsi.remaster.model;
 
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,9 +23,11 @@ public class Follow {
     private UUID id;
     @ManyToOne
     @JoinColumn(name = "followed_id")
+    @JsonIncludeProperties({ "id", "username", "name", "image" })
     private ApplicationUser followed;
     @ManyToOne
     @JoinColumn(name = "follower_id")
+    @JsonIncludeProperties({ "id", "username", "name", "image" })
     private ApplicationUser follower;
     @CreationTimestamp
     @Column(name = "created_at")

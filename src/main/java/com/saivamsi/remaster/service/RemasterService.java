@@ -12,6 +12,7 @@ import com.saivamsi.remaster.repository.RemasterRepository;
 import com.saivamsi.remaster.repository.UserRepository;
 import com.saivamsi.remaster.request.CreateRemasterRequest;
 import com.saivamsi.remaster.request.UpdateRemasterRequest;
+import com.saivamsi.remaster.response.BasicRemasterResponse;
 import com.saivamsi.remaster.response.PageResponse;
 import com.saivamsi.remaster.response.RemasterResponse;
 import lombok.RequiredArgsConstructor;
@@ -194,6 +195,27 @@ public class RemasterService {
         remasterRepository.save(remaster);
 
         rankingService.dequeueLike(remaster);
+    }
+
+    public PageResponse<BasicRemasterResponse> getUserLikedRemasters(ApplicationUser user, UUID cursor, Integer limit) {
+        List<RemasterLike> remasterLikes;
+        if (cursor == null) {
+            remasterLikes = remasterLikeRepository.findAllByUserId(user.getId(),limit + 1);
+        } else {
+            remasterLikes = remasterLikeRepository.findAllByUserIdAndCursor(user.getId(), cursor,limit + 1);
+        }
+
+        UUID next = null;
+        if (remasterLikes.size() > limit) {
+            RemasterLike last = remasterLikes.removeLast();
+            next = last.getId();
+        }
+
+        List<BasicRemasterResponse> remasterResponses = remasterLikes.stream()
+                .map(remasterLike -> remasterLike.getRemaster().getBasicRemasterResponse())
+                .toList();
+
+        return new PageResponse<>(next, remasterResponses);
     }
 
     public PageResponse<RemasterResponse> getTrendingRemasters(UUID cursor, Integer limit) {

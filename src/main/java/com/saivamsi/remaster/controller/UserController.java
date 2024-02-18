@@ -3,9 +3,7 @@ package com.saivamsi.remaster.controller;
 import com.saivamsi.remaster.model.ApplicationUser;
 import com.saivamsi.remaster.model.Session;
 import com.saivamsi.remaster.request.UpdateUserRequest;
-import com.saivamsi.remaster.response.AuthenticationResponse;
-import com.saivamsi.remaster.response.PageResponse;
-import com.saivamsi.remaster.response.UserResponse;
+import com.saivamsi.remaster.response.*;
 import com.saivamsi.remaster.service.SessionService;
 import com.saivamsi.remaster.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -82,5 +80,17 @@ public class UserController {
     public ResponseEntity<String> unfollowUser(@RequestParam UUID id, @AuthenticationPrincipal ApplicationUser user) {
         userService.unfollow(id, user);
         return ResponseEntity.ok("success");
+    }
+
+    @GetMapping("/user/followers")
+    public ResponseEntity<PageResponse<BasicUserResponse>> getUserFollowers(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit, @AuthenticationPrincipal ApplicationUser user) {
+        return ResponseEntity
+                .ok(userService.getUserFollowers(user, cursor, limit));
+    }
+
+    @GetMapping("/user/following")
+    public ResponseEntity<PageResponse<BasicUserResponse>> getUserFollowing(@RequestParam(required = false) UUID cursor, @RequestParam Integer limit, @AuthenticationPrincipal ApplicationUser user) {
+        return ResponseEntity
+                .ok(userService.getUserFollowing(user, cursor, limit));
     }
 }

@@ -3,6 +3,7 @@ package com.saivamsi.remaster.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.saivamsi.remaster.request.UpdateRemasterRequest;
+import com.saivamsi.remaster.response.BasicRemasterResponse;
 import com.saivamsi.remaster.response.RemasterResponse;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +52,7 @@ public class Remaster {
     private String loops;
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIncludeProperties({ "id", "username" })
+    @JsonIncludeProperties({ "id", "username", "name", "image" })
     private ApplicationUser user;
     @JsonIgnore
     @OneToMany(mappedBy = "remaster", cascade = CascadeType.REMOVE, orphanRemoval = true)
@@ -63,17 +65,17 @@ public class Remaster {
     @Column(columnDefinition = "integer default 0")
     private Integer totalPlays = 0;
     @Column()
-    private List<Integer> pastLikeCounts = List.of(totalLikes);
+    private List<Integer> pastLikeCounts = new ArrayList<>();
     @Column()
-    private List<Integer> pastPlayCounts = List.of(totalPlays);
+    private List<Integer> pastPlayCounts = new ArrayList<>();
     @Column(columnDefinition = "float default 0.0")
     private Float likeRank = 0.0F;
     @Column(columnDefinition = "float default 0.0")
     private Float playRank = 0.0F;
     @Column()
-    private List<Float> pastLikeRanks = List.of(likeRank);
+    private List<Float> pastLikeRanks = new ArrayList<>();
     @Column()
-    private List<Float> pastPlayRanks = List.of(playRank);
+    private List<Float> pastPlayRanks = new ArrayList<>();
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
@@ -115,6 +117,16 @@ public class Remaster {
                 .totalPlays(this.totalPlays)
                 .updatedAt(this.updatedAt)
                 .createdAt(this.createdAt).build();
+    }
+
+    public BasicRemasterResponse getBasicRemasterResponse() {
+        return BasicRemasterResponse.builder()
+                .id(this.id)
+                .url(this.url)
+                .name(this.name)
+                .user(this.user.getBasicUser())
+                .createdAt(this.createdAt)
+                .build();
     }
 
     public Remaster updateRemaster(UpdateRemasterRequest remaster) {

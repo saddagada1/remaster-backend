@@ -1,5 +1,7 @@
 package com.saivamsi.remaster.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +24,7 @@ public class RemasterLike {
     private UUID id;
     @ManyToOne
     @JoinColumn(name = "remaster_id")
+    @JsonIncludeProperties({ "id", "url", "name", "user", "created_at" })
     private Remaster remaster;
     @ManyToOne
     @JoinColumn(name = "user_id")

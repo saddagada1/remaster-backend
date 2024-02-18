@@ -4,11 +4,10 @@ import com.saivamsi.remaster.exception.GlobalError;
 import com.saivamsi.remaster.exception.GlobalException;
 import com.saivamsi.remaster.model.ApplicationUser;
 import com.saivamsi.remaster.model.Follow;
-import com.saivamsi.remaster.model.Remaster;
-import com.saivamsi.remaster.model.RemasterLike;
 import com.saivamsi.remaster.repository.FollowRepository;
 import com.saivamsi.remaster.repository.UserRepository;
 import com.saivamsi.remaster.request.UpdateUserRequest;
+import com.saivamsi.remaster.response.BasicUserResponse;
 import com.saivamsi.remaster.response.PageResponse;
 import com.saivamsi.remaster.response.UserResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -122,5 +120,47 @@ public class UserService {
         followed = followed.decrementTotalFollowers();
         user = user.decrementTotalFollowing();
         userRepository.saveAll(List.of(followed, user));
+    }
+
+    public PageResponse<BasicUserResponse> getUserFollowers(ApplicationUser user, UUID cursor, Integer limit) {
+        List<Follow> followers;
+        if (cursor == null) {
+            followers = followRepository.findAllByFollowedId(user.getId(),limit + 1);
+        } else {
+            followers = followRepository.findAllByFollowedIdAndCursor(user.getId(), cursor,limit + 1);
+        }
+
+        UUID next = null;
+        if (followers.size() > limit) {
+            Follow last = followers.removeLast();
+            next = last.getId();
+        }
+
+        List<BasicUserResponse> userResponses = followers.stream()
+                .map(follow -> follow.getFollower().getBasicUser())
+                .toList();
+
+        return new PageResponse<>(next, userResponses);
+    }
+
+    public PageResponse<BasicUserResponse> getUserFollowing(ApplicationUser user, UUID cursor, Integer limit) {
+        List<Follow> following;
+        if (cursor == null) {
+            following = followRepository.findAllByFollowerId(user.getId(),limit + 1);
+        } else {
+            following = followRepository.findAllByFollowerIdAndCursor(user.getId(), cursor,limit + 1);
+        }
+
+        UUID next = null;
+        if (following.size() > limit) {
+            Follow last = following.removeLast();
+            next = last.getId();
+        }
+
+        List<BasicUserResponse> userResponses = following.stream()
+                .map(follow -> follow.getFollowed().getBasicUser())
+                .toList();
+
+        return new PageResponse<>(next, userResponses);
     }
 }
