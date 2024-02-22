@@ -4,6 +4,7 @@ import com.saivamsi.remaster.filter.JWTFilter;
 import com.saivamsi.remaster.model.Role;
 import com.saivamsi.remaster.service.PrincipleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +31,8 @@ public class SecurityConfiguration {
 
     private final JWTFilter jwtFilter;
     private final PrincipleService principleService;
+    @Value("${CLIENT_DOMAIN}")
+    private String clientDomain;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -52,7 +55,7 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", clientDomain));
         configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE"));
         configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization"));
         configuration.setAllowCredentials(true);
