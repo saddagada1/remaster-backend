@@ -11,8 +11,8 @@
     <groupId>com.saivamsi</groupId>
     <artifactId>remaster</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>layers</name>
-    <description>g-code / stl marketplace</description>
+    <name>remaster</name>
+    <description>the guitar thing</description>
     <properties>
         <java.version>21</java.version>
     </properties>
