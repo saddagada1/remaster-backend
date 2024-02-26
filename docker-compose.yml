@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
 
   postgres-backup:
     image: eeshugerman/postgres-backup-s3:16
@@ -62,3 +63,6 @@ services:
       CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
       RESEND_KEY: ${RESEND_KEY}
       CLIENT_DOMAIN: ${CLIENT_DOMAIN}
+
+volumes:
+  pgdata:

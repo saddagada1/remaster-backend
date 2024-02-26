@@ -33,9 +33,9 @@ public class RemasterService {
     private final RankingService rankingService;
 
     public RemasterResponse createRemaster (CreateRemasterRequest remasterRequest, ApplicationUser user) {
-//        if (!user.isVerified()) {
-//            throw new GlobalException(HttpStatus.BAD_REQUEST, GlobalError.builder().subject("user").message("please verify your account before proceeding").build());
-//        }
+        if (!user.isVerified()) {
+            throw new GlobalException(HttpStatus.BAD_REQUEST, GlobalError.builder().subject("user").message("please verify your account before proceeding").build());
+        }
 
         Remaster remaster = remasterRepository.save(new Remaster(remasterRequest.getUrl(), remasterRequest.getName(), remasterRequest.getDescription(),
                 remasterRequest.getDuration(), remasterRequest.getKey(), remasterRequest.getMode(),
