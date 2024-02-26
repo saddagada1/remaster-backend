@@ -43,7 +43,7 @@ public class ResendService {
         template = template.replace("${VERIFY_LINK}", clientDomain + "/verify?token=" + token);
 
         CreateEmailOptions options = CreateEmailOptions.builder()
-                .from("Remaster <onboarding@sloopy.saivamsi.ca>")
+                .from("Remaster <onboarding@saivamsi.ca>")
                 .to(recipient)
                 .subject("Verify Email")
                 .html(template)
@@ -71,7 +71,7 @@ public class ResendService {
         template = template.replace("${FORGOT_PASSWORD_LINK}", clientDomain + "/forgot-password/reset?token=" + token);
 
         CreateEmailOptions options = CreateEmailOptions.builder()
-                .from("Remaster <onboarding@sloopy.saivamsi.ca>")
+                .from("Remaster <onboarding@saivamsi.ca>")
                 .to(recipient)
                 .subject("Forgot Password")
                 .html(template)
